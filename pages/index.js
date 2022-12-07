@@ -1,8 +1,64 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import styles from "../styles/Home.module.css";
 
 export default function Home() {
+  const [years, setYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [prizes, setPrizes] = useState([]);
+
+  async function fetchYears() {
+    const response = await fetch("https://ignoble-api.onrender.com/years");
+    const data = await response.json();
+    setYears(data.years);
+  }
+
+  useEffect(() => {
+    fetchYears();
+  }, []);
+
+  useEffect(() => {
+    console.log("FETCH BY YEAR EFFECT!", selectedYear);
+
+    // const log = () => {
+    //   console.log("scrolling!!!");
+    // };
+    // window.addEventListener("scroll", log);
+    // request cancelling!
+    const controller = new AbortController();
+
+    async function fetchPrizesByYear() {
+      if (selectedYear === null) return;
+
+      try {
+        const response = await fetch(
+          `https://ignoble-api.onrender.com/years/${selectedYear}/prizes`,
+          { signal: controller.signal }
+        );
+        const data = await response.json();
+        console.log("FETCHING???", data.prizes);
+        setPrizes(data.prizes);
+      } catch (error) {
+        console.log(error.name);
+        if (error.name === "AbortError") {
+          // we can ignore this
+        } else {
+          console.error(error);
+        }
+      }
+    }
+
+    fetchPrizesByYear();
+
+    return () => {
+      // fired before the new effect is executed
+      console.log("CLEANUP!");
+      controller.abort(); // cancels a request if it has not completed
+      // window.removeEventListener("scroll", log);
+    };
+  }, [selectedYear]);
+
   return (
     <div className={styles.container}>
       <Head>
@@ -12,45 +68,30 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div>
+          {years.sort().map((year) => (
+            <button
+              key={year}
+              style={{
+                backgroundColor:
+                  selectedYear === year ? "dodgerblue" : "initial",
+              }}
+              onClick={() => setSelectedYear(year)}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+        <div>
+          <h2>{selectedYear}</h2>
+          {prizes.map((prize) => {
+            return (
+              <details key={prize.id}>
+                <summary>{prize.category}</summary>
+                <p>{prize.rationale}</p>
+              </details>
+            );
+          })}
         </div>
       </main>
 
@@ -60,12 +101,12 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          Powered by{" "}
           <span className={styles.logo}>
             <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
+  );
 }
