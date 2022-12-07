@@ -1,64 +1,15 @@
 import Head from "next/head";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useIgnobleApi from "../hooks/useIgnobleApi";
 import styles from "../styles/Home.module.css";
 
 export default function Home() {
-  const [years, setYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
-  const [prizes, setPrizes] = useState([]);
 
-  async function fetchYears() {
-    const response = await fetch("https://ignoble-api.onrender.com/years");
-    const data = await response.json();
-    setYears(data.years);
-  }
+  const { prizes, years } = useIgnobleApi(selectedYear);
 
-  useEffect(() => {
-    fetchYears();
-  }, []);
-
-  useEffect(() => {
-    console.log("FETCH BY YEAR EFFECT!", selectedYear);
-
-    // const log = () => {
-    //   console.log("scrolling!!!");
-    // };
-    // window.addEventListener("scroll", log);
-    // request cancelling!
-    const controller = new AbortController();
-
-    async function fetchPrizesByYear() {
-      if (selectedYear === null) return;
-
-      try {
-        const response = await fetch(
-          `https://ignoble-api.onrender.com/years/${selectedYear}/prizes`,
-          { signal: controller.signal }
-        );
-        const data = await response.json();
-        console.log("FETCHING???", data.prizes);
-        setPrizes(data.prizes);
-      } catch (error) {
-        console.log(error.name);
-        if (error.name === "AbortError") {
-          // we can ignore this
-        } else {
-          console.error(error);
-        }
-      }
-    }
-
-    fetchPrizesByYear();
-
-    return () => {
-      // fired before the new effect is executed
-      console.log("CLEANUP!");
-      controller.abort(); // cancels a request if it has not completed
-      // window.removeEventListener("scroll", log);
-    };
-  }, [selectedYear]);
-
+  console.log("PRIZES", prizes, "YEARS", years);
   return (
     <div className={styles.container}>
       <Head>
